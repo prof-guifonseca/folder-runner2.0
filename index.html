@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Folder Run — Overpower</title>
+  <style>
+    :root{
+      --bg:#0b0f1a;
+      --panel:#111827;
+      --panel2:#0f172a;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --accent:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --line:rgba(255,255,255,.12);
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 50% 0%, rgba(34,197,94,.12), transparent 55%),
+                  radial-gradient(1000px 600px at 90% 20%, rgba(59,130,246,.10), transparent 55%),
+                  linear-gradient(180deg,#070a12,#0b1020);
+      color:var(--text);
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Press Start 2P", monospace;
+      overflow:hidden;
+    }
+
+    /* Screens */
+    .screen{
+      position:fixed; inset:0;
+      display:flex; flex-direction:column;
+      justify-content:center; align-items:center;
+      padding:24px;
+    }
+    .hidden{display:none !important}
+    .card{
+      width:min(920px, 92vw);
+      background: linear-gradient(180deg, rgba(17,24,39,.88), rgba(15,23,42,.85));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:24px;
+    }
+    h1{margin:0 0 10px 0; font-size:28px; letter-spacing:1px}
+    p{margin:6px 0; color:var(--muted); line-height:1.45}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .btn{
+      appearance:none; border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 14px;
+      border-radius: 12px;
+      cursor:pointer;
+      transition: transform .08s ease, background .2s ease;
+      font-weight:700;
+    }
+    .btn:hover{background: rgba(255,255,255,.10)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{background: rgba(34,197,94,.18); border-color: rgba(34,197,94,.35)}
+    .btn.danger{background: rgba(239,68,68,.14); border-color: rgba(239,68,68,.35)}
+    .kbd{
+      display:inline-block;
+      padding:2px 8px;
+      border:1px solid var(--line);
+      border-bottom-width:2px;
+      border-radius:10px;
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      font-weight:800;
+      margin:0 2px;
+    }
+
+    /* Game layer */
+    #gameRoot{
+      position:fixed; inset:0;
+      display:flex; flex-direction:column;
+    }
+    #hud{
+      position:absolute; left:12px; right:12px; top:12px;
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      z-index:20;
+      pointer-events:none;
+    }
+    .hud-pill{
+      pointer-events:auto;
+      display:flex; align-items:center; gap:10px;
+      background: rgba(17,24,39,.75);
+      border:1px solid var(--line);
+      border-radius: 999px;
+      padding:8px 12px;
+      box-shadow: 0 10px 26px rgba(0,0,0,.22);
+      backdrop-filter: blur(8px);
+    }
+    .hud-pill strong{font-size:14px}
+    .hud-pill span{color:var(--muted); font-size:12px}
+    #toast{
+      position:absolute; left:50%; top:68px;
+      transform: translateX(-50%);
+      background: rgba(15,23,42,.85);
+      border:1px solid var(--line);
+      border-radius: 999px;
+      padding:10px 14px;
+      color:var(--text);
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      opacity:0; pointer-events:none;
+      transition: opacity .22s ease, transform .22s ease;
+      z-index:30;
+      max-width:min(92vw, 720px);
+      text-align:center;
+      font-size:12px;
+    }
+    #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+    #overlayHint{
+      position:absolute; left:50%; bottom:16px;
+      transform: translateX(-50%);
+      z-index:15;
+      background: rgba(17,24,39,.55);
+      border:1px solid var(--line);
+      border-radius: 999px;
+      padding:8px 12px;
+      color:var(--muted);
+      font-size:11px;
+      pointer-events:none;
+      backdrop-filter: blur(8px);
+    }
+
+    canvas{display:block; width:100vw; height:100vh}
+    /* Modals */
+    .modal{
+      position:fixed; inset:0;
+      display:flex; justify-content:center; align-items:center;
+      background: rgba(0,0,0,.55);
+      z-index:50;
+    }
+    .modal > .card{max-height:min(86vh, 760px); overflow:auto}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+    .opt{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding:12px;
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+    }
+    .opt:hover{background: rgba(255,255,255,.08)}
+    .opt small{color:var(--muted)}
+    .swatch{width:100%; height:54px; border-radius:12px; margin-top:10px; border:1px solid var(--line)}
+    .tag{
+      display:inline-flex; align-items:center;
+      font-size:11px; padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color:var(--muted);
+      margin-right:6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Opening -->
+  <section id="openingScreen" class="screen">
+    <div class="card">
+      <h1>Pasta do corredor</h1>
+      <p>Versão Overpower — PC + celular</p>
+      <p>Toque/clique para começar.</p>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="openContinue">Continuar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Start -->
+  <section id="startScreen" class="screen hidden">
+    <div class="card">
+      <h1>FOLDER RUN</h1>
+      <p>Controles:</p>
+      <p>
+        Mover: <span class="kbd">A</span><span class="kbd">D</span> ou <span class="kbd">←</span><span class="kbd">→</span>
+        · Atirar: <span class="kbd">Space</span> (ou <span class="kbd">J</span>/<span class="kbd">K</span>)
+        · Pausar: <span class="kbd">P</span> / <span class="kbd">Esc</span>
+        · Reiniciar: <span class="kbd">R</span>
+      </p>
+      <p>No celular: toque no lado esquerdo/direito para trocar de faixa; toque na parte de cima para atirar.</p>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="startButton">Jogar</button>
+        <button class="btn" id="btnShopOpen2">Loja</button>
+        <button class="btn" id="btnMapOpen2">Mapas</button>
+        <button class="btn" id="btnTrophyOpen2">Conquistas</button>
+      </div>
+      <p style="margin-top:10px">Dica: derrubar inimigos dá mais pontos que só desviar. Pegue moedas para bônus.</p>
+    </div>
+  </section>
+
+  <!-- Game -->
+  <div id="gameRoot" class="hidden">
+    <canvas id="c"></canvas>
+
+    <div id="hud">
+      <div class="hud-pill"><strong id="hudScore">Score: 0</strong><span id="hudCombo">Combo: x1</span></div>
+      <div class="hud-pill"><strong id="hudLives">Vidas: 3</strong><span id="hudLevel">Nível: 1</span></div>
+      <div class="hud-pill">
+        <button class="btn" id="btnPause">Pausar</button>
+        <button class="btn" id="btnShopOpen">Loja</button>
+        <button class="btn" id="btnMapOpen">Mapas</button>
+        <button class="btn" id="btnTrophyOpen">Conquistas</button>
+        <button class="btn danger" id="btnRestart">Recomeçar</button>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+    <div id="overlayHint">A/D ou ←/→ · Space pra atirar · P pausa</div>
+  </div>
+
+  <!-- End / Credits -->
+  <section id="endScreen" class="screen hidden">
+    <div class="card">
+      <h1 id="endTitle">Fim</h1>
+      <p id="endMsg">—</p>
+      <p id="endScore">Score: 0</p>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="endPlayAgain">Jogar de novo</button>
+        <button class="btn" id="endBack">Voltar ao menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modals -->
+  <div id="shopModal" class="modal hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h1 style="font-size:18px;margin:0">Loja</h1>
+        <button class="btn" id="shopClose">Fechar</button>
+      </div>
+      <p>Escolha o carro e um “buff” de tiro. (Sem pay-to-win… só um pouco 😄)</p>
+      <div class="grid" id="shopGrid"></div>
+      <p style="margin-top:12px">
+        <span class="tag">Space = tiro</span>
+        <span class="tag">Cooldown</span>
+        <span class="tag">Dano/Perfuração</span>
+      </p>
+    </div>
+  </div>
+
+  <div id="mapModal" class="modal hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h1 style="font-size:18px;margin:0">Mapas</h1>
+        <button class="btn" id="mapClose">Fechar</button>
+      </div>
+      <p>Troca o visual e ajusta levemente a “vibe” do jogo (só estética).</p>
+      <div class="grid" id="mapGrid"></div>
+    </div>
+  </div>
+
+  <div id="trophyModal" class="modal hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h1 style="font-size:18px;margin:0">Conquistas</h1>
+        <button class="btn" id="trophyClose">Fechar</button>
+      </div>
+      <div id="trophyList" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // =========================
+  // Helpers / UI
+  // =========================
+  const $ = (id) => document.getElementById(id);
+
+  const openingScreen = $("openingScreen");
+  const startScreen   = $("startScreen");
+  const gameRoot      = $("gameRoot");
+  const endScreen     = $("endScreen");
+
+  const openContinue  = $("openContinue");
+  const startButton   = $("startButton");
+
+  const btnPause      = $("btnPause");
+  const btnRestart    = $("btnRestart");
+
+  const hudScore      = $("hudScore");
+  const hudCombo      = $("hudCombo");
+  const hudLives      = $("hudLives");
+  const hudLevel      = $("hudLevel");
+
+  const toastEl       = $("toast");
+
+  const shopModal     = $("shopModal");
+  const mapModal      = $("mapModal");
+  const trophyModal   = $("trophyModal");
+
+  const btnShopOpen   = $("btnShopOpen");
+  const btnMapOpen    = $("btnMapOpen");
+  const btnTrophyOpen = $("btnTrophyOpen");
+
+  const btnShopOpen2  = $("btnShopOpen2");
+  const btnMapOpen2   = $("btnMapOpen2");
+  const btnTrophyOpen2= $("btnTrophyOpen2");
+
+  const shopClose     = $("shopClose");
+  const mapClose      = $("mapClose");
+  const trophyClose   = $("trophyClose");
+
+  const shopGrid      = $("shopGrid");
+  const mapGrid       = $("mapGrid");
+  const trophyList    = $("trophyList");
+
+  const endTitle      = $("endTitle");
+  const endMsg        = $("endMsg");
+  const endScore      = $("endScore");
+  const endPlayAgain  = $("endPlayAgain");
+  const endBack       = $("endBack");
+
+  function showToast(msg, ms = 1400) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toastEl.classList.remove("show"), ms);
+  }
+
+  function showModal(modal) {
+    modal.classList.remove("hidden");
+    setPaused(true);
+  }
+  function hideModal(modal) {
+    modal.classList.add("hidden");
+    // só retoma se o jogo estiver em execução
+    if (state.mode === "game") setPaused(false);
+  }
+
+  // =========================
+  // Audio (self-contained)
+  // =========================
+  let audioCtx = null;
+  function initAudio() {
+    if (audioCtx) return;
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+  }
+  function tone(freq=440, dur=0.06, type="square", gain=0.05) {
+    if (!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0);
+    o.stop(t0 + dur);
+  }
+
+  // =========================
+  // Game config
+  // =========================
+  const canvas = $("c");
+  const ctx = canvas.getContext("2d", { alpha: false });
+
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width  = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  const MAPS = [
+    { name:"Cidade", desc:"Azul urbano", bgTop:"#87CEEB", bgBot:"#1E90FF" },
+    { name:"Deserto", desc:"Areia quente", bgTop:"#FFD700", bgBot:"#FFA500" },
+    { name:"Praia",  desc:"Mar + sol",   bgTop:"#1E90FF", bgBot:"#FFD700" },
+    { name:"Noite",  desc:"Neon escuro", bgTop:"#0b1020", bgBot:"#1f2937" },
+  ];
+
+  const CARS = [
+    { name:"Vermelho Clássico", color:"#ff2d2d" },
+    { name:"Azul Turbo",       color:"#2563eb" },
+    { name:"Verde Ácido",      color:"#22c55e" },
+    { name:"Amarelo Nitro",    color:"#facc15" },
+    { name:"Roxo Neon",        color:"#a855f7" },
+  ];
+
+  const WEAPONS = [
+    { name:"Padrão",    desc:"Tiro único, equilibrado", cooldown: 220, spread: 0, pierce: 0 },
+    { name:"Rápido",    desc:"Menor cooldown",          cooldown: 120, spread: 0, pierce: 0 },
+    { name:"Duplo",     desc:"2 tiros com leve spread", cooldown: 220, spread: 10, pierce: 0 },
+    { name:"Perfura 1", desc:"Atravessa 1 inimigo",     cooldown: 240, spread: 0, pierce: 1 },
+  ];
+
+  // =========================
+  // State
+  // =========================
+  const state = {
+    mode: "opening", // opening | start | game | end
+    paused: false,
+    lastTs: 0,
+
+    score: 0,
+    level: 1,
+    lives: 3,
+    combo: 1,
+    comboTimer: 0,
+
+    laneCount: 3,
+    lane: 1,
+
+    playerColor: CARS[0].color,
+    map: MAPS[0],
+    weapon: WEAPONS[0],
+
+    lastShot: 0,
+
+    enemies: [],
+    coins: [],
+    bullets: [],
+    particles: [],
+
+    spawnEnemyT: 0,
+    spawnCoinT: 0,
+
+    trophies: new Set(),
+    stats: { kills: 0, coins: 0, shots: 0 }
+  };
+
+  function setMode(next) {
+    state.mode = next;
+    openingScreen.classList.toggle("hidden", next !== "opening");
+    startScreen.classList.toggle("hidden",   next !== "start");
+    gameRoot.classList.toggle("hidden",      next !== "game");
+    endScreen.classList.toggle("hidden",     next !== "end");
+  }
+
+  function setPaused(v) {
+    state.paused = !!v;
+    btnPause.textContent = state.paused ? "Retomar" : "Pausar";
+    showToast(state.paused ? "Pausado" : "Valendo!", 900);
+  }
+
+  // =========================
+  // Entities
+  // =========================
+  function lanesX() {
+    const w = innerWidth;
+    // 3 faixas “bonitas”, com margem
+    const left = w * 0.18;
+    const right = w * 0.82;
+    const step = (right - left) / (state.laneCount - 1);
+    const arr = [];
+    for (let i = 0; i < state.laneCount; i++) arr.push(left + i * step);
+    return arr;
+  }
+
+  function playerRect() {
+    const x = lanesX()[state.lane];
+    const y = innerHeight - 140;
+    return { x: x - 30, y, w: 60, h: 100, cx: x, cy: y + 50 };
+  }
+
+  function spawnEnemy() {
+    const lanes = lanesX();
+    const lane = Math.floor(Math.random() * state.laneCount);
+    const x = lanes[lane];
+    const speed = 240 + state.level * 22 + Math.random() * 60;
+    const color = CARS[Math.floor(Math.random() * CARS.length)].color;
+    state.enemies.push({
+      lane, x, y: -120, w: 64, h: 104,
+      speed,
+      color,
+      hp: 1 + (state.level >= 8 ? 1 : 0) // inimigo mais “tanque” em levels altos
+    });
+  }
+
+  function spawnCoin() {
+    const lanes = lanesX();
+    const lane = Math.floor(Math.random() * state.laneCount);
+    const x = lanes[lane];
+    const speed = 220 + state.level * 10 + Math.random() * 40;
+    state.coins.push({ lane, x, y: -40, r: 10, speed });
+  }
+
+  function shoot() {
+    if (state.paused || state.mode !== "game") return;
+    const now = performance.now();
+    if (now - state.lastShot < state.weapon.cooldown) return;
+    state.lastShot = now;
+
+    const p = playerRect();
+    const base = { x: p.cx, y: p.y + 20, vx: 0, vy: -780, r: 5, pierce: state.weapon.pierce };
+    if (state.weapon.name === "Duplo") {
+      state.bullets.push({ ...base, vx: -state.weapon.spread });
+      state.bullets.push({ ...base, vx: +state.weapon.spread });
+    } else {
+      state.bullets.push(base);
+    }
+
+    state.stats.shots++;
+    tone(860, 0.04, "square", 0.045);
+  }
+
+  function explode(x, y, color="#fff") {
+    for (let i=0;i<10;i++){
+      state.particles.push({
+        x, y,
+        vx:(Math.random()*2-1)*260,
+        vy:(Math.random()*2-1)*260,
+        life: 0.32 + Math.random()*0.2,
+        color
+      });
+    }
+  }
+
+  function rectsOverlap(a,b){
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // =========================
+  // Trophies
+  // =========================
+  function award(id, title) {
+    if (state.trophies.has(id)) return;
+    state.trophies.add(id);
+    showToast("Conquista: " + title, 1600);
+    tone(620, 0.07, "triangle", 0.06);
+  }
+
+  function checkTrophies() {
+    if (state.score >= 200) award("bronze", "Bronze (200+)");
+    if (state.score >= 1000) award("silver", "Prata (1000+)");
+    if (state.score >= 3000) award("gold", "Ouro (3000+)");
+    if (state.stats.kills >= 50) award("killer", "Killer (50 abates)");
+    if (state.combo >= 8) award("combo8", "Combo x8");
+    if (state.lives === 3 && state.score >= 1500) award("clean", "Sem tomar dano (1500+)");
+  }
+
+  function renderTrophyModal() {
+    const items = [
+      { id:"bronze", name:"Bronze", desc:"Faça 200+ pontos" },
+      { id:"silver", name:"Prata",  desc:"Faça 1000+ pontos" },
+      { id:"gold",   name:"Ouro",   desc:"Faça 3000+ pontos" },
+      { id:"killer", name:"Killer", desc:"50 inimigos abatidos" },
+      { id:"combo8", name:"Combo",  desc:"Chegue ao combo x8" },
+      { id:"clean",  name:"Clean",  desc:"1500+ sem perder vida" },
+    ];
+    trophyList.innerHTML = items.map(it => {
+      const ok = state.trophies.has(it.id);
+      return `
+        <div class="opt" style="opacity:${ok?1:0.65}">
+          <div><strong>${ok ? "✅ " : "⬜ "}${it.name}</strong></div>
+          <small>${it.desc}</small>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // =========================
+  // Shop/Maps UI
+  // =========================
+  function buildShop() {
+    shopGrid.innerHTML = "";
+    CARS.forEach((car, idx) => {
+      const el = document.createElement("div");
+      el.className = "opt";
+      el.innerHTML = `
+        <div><strong>${car.name}</strong></div>
+        <small>Cor do carro</small>
+        <div class="swatch" style="background:${car.color}"></div>
+      `;
+      el.onclick = () => {
+        state.playerColor = car.color;
+        showToast("Carro: " + car.name);
+      };
+      shopGrid.appendChild(el);
+    });
+
+    WEAPONS.forEach((w) => {
+      const el = document.createElement("div");
+      el.className = "opt";
+      el.innerHTML = `
+        <div><strong>Arma: ${w.name}</strong></div>
+        <small>${w.desc}</small>
+        <div style="margin-top:10px">
+          <span class="tag">cooldown ${w.cooldown}ms</span>
+          <span class="tag">pierce ${w.pierce}</span>
+        </div>
+      `;
+      el.onclick = () => {
+        state.weapon = w;
+        showToast("Arma equipada: " + w.name);
+      };
+      shopGrid.appendChild(el);
+    });
+  }
+
+  function buildMaps() {
+    mapGrid.innerHTML = "";
+    MAPS.forEach((m) => {
+      const el = document.createElement("div");
+      el.className = "opt";
+      el.innerHTML = `
+        <div><strong>${m.name}</strong></div>
+        <small>${m.desc}</small>
+        <div class="swatch" style="background: linear-gradient(${m.bgTop}, ${m.bgBot});"></div>
+      `;
+      el.onclick = () => {
+        state.map = m;
+        showToast("Mapa: " + m.name);
+      };
+      mapGrid.appendChild(el);
+    });
+  }
+
+  // =========================
+  // Game lifecycle
+  // =========================
+  function resetGame() {
+    state.score = 0;
+    state.level = 1;
+    state.lives = 3;
+    state.combo = 1;
+    state.comboTimer = 0;
+
+    state.lane = 1;
+
+    state.enemies.length = 0;
+    state.coins.length = 0;
+    state.bullets.length = 0;
+    state.particles.length = 0;
+
+    state.spawnEnemyT = 0;
+    state.spawnCoinT = 0;
+
+    state.stats = { kills: 0, coins: 0, shots: 0 };
+
+    hudScore.textContent = "Score: 0";
+    hudLives.textContent = "Vidas: 3";
+    hudCombo.textContent = "Combo: x1";
+    hudLevel.textContent = "Nível: 1";
+
+    showToast("Boa sorte. Agora com tiro 😈", 1400);
+  }
+
+  function endGame(title, msg) {
+    setMode("end");
+    state.mode = "end";
+    endTitle.textContent = title;
+    endMsg.textContent = msg;
+    endScore.textContent = `Score: ${state.score} · Abates: ${state.stats.kills} · Moedas: ${state.stats.coins}`;
+  }
+
+  function startGame() {
+    initAudio();
+    setMode("game");
+    state.mode = "game";
+    resetGame();
+    state.paused = false;
+    state.lastTs = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  // =========================
+  // Input (PC + Mobile)
+  // =========================
+  const keys = new Set();
+
+  function moveLane(dir) {
+    if (state.mode !== "game" || state.paused) return;
+    state.lane = Math.max(0, Math.min(state.laneCount - 1, state.lane + dir));
+    tone(280, 0.03, "square", 0.03);
+  }
+
+  window.addEventListener("keydown", (e) => {
+    initAudio();
+    keys.add(e.code);
+
+    if (state.mode === "opening" && (e.code === "Enter" || e.code === "Space")) {
+      goToStart();
+      return;
+    }
+    if (state.mode === "start" && (e.code === "Enter" || e.code === "Space")) {
+      startGame();
+      return;
+    }
+
+    if (state.mode !== "game") return;
+
+    if (e.code === "ArrowLeft" || e.code === "KeyA") moveLane(-1);
+    if (e.code === "ArrowRight"|| e.code === "KeyD") moveLane(+1);
+
+    if (e.code === "Space" || e.code === "KeyJ" || e.code === "KeyK") {
+      e.preventDefault();
+      shoot();
+    }
+    if (e.code === "KeyP" || e.code === "Escape") setPaused(!state.paused);
+    if (e.code === "KeyR") { resetGame(); }
+  });
+
+  window.addEventListener("keyup", (e) => keys.delete(e.code));
+
+  // Mobile / pointer controls:
+  canvas.addEventListener("pointerdown", (e) => {
+    initAudio();
+    if (state.mode !== "game") return;
+    // topo da tela = tiro; baixo = mover
+    if (e.clientY < innerHeight * 0.40) {
+      shoot();
+      return;
+    }
+    if (e.clientX < innerWidth / 2) moveLane(-1);
+    else moveLane(+1);
+  });
+
+  // =========================
+  // Render
+  // =========================
+  function drawBackground() {
+    // gradiente vertical
+    const g = ctx.createLinearGradient(0,0,0,innerHeight);
+    g.addColorStop(0, state.map.bgTop);
+    g.addColorStop(1, state.map.bgBot);
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+
+    // estrada
+    const roadW = innerWidth * 0.62;
+    const roadX = (innerWidth - roadW) / 2;
+    ctx.fillStyle = "rgba(0,0,0,.25)";
+    ctx.fillRect(roadX, 0, roadW, innerHeight);
+
+    // linhas faixas
+    const lanes = lanesX();
+    ctx.strokeStyle = "rgba(255,255,255,.18)";
+    ctx.lineWidth = 2;
+    lanes.forEach((x, i) => {
+      if (i === 0 || i === lanes.length-1) return;
+      ctx.setLineDash([18, 18]);
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, innerHeight);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+  }
+
+  function drawPlayer() {
+    const p = playerRect();
+    // carro
+    ctx.fillStyle = state.playerColor;
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    // borda
+    ctx.strokeStyle = "rgba(255,255,255,.75)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(p.x+1, p.y+1, p.w-2, p.h-2);
+    // vidro
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.fillRect(p.x+10, p.y+12, p.w-20, 20);
+    // farol
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    ctx.fillRect(p.x+12, p.y+p.h-20, p.w-24, 8);
+  }
+
+  function drawEnemy(en) {
+    ctx.fillStyle = en.color;
+    ctx.fillRect(en.x - en.w/2, en.y, en.w, en.h);
+    ctx.strokeStyle = "rgba(255,255,255,.55)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(en.x - en.w/2 + 1, en.y+1, en.w-2, en.h-2);
+
+    // “hp” visual simples para tanques
+    if (en.hp > 1) {
+      ctx.fillStyle = "rgba(0,0,0,.35)";
+      ctx.fillRect(en.x - en.w/2, en.y - 10, en.w, 6);
+      ctx.fillStyle = "rgba(245,158,11,.9)";
+      ctx.fillRect(en.x - en.w/2, en.y - 10, Math.min(en.w, en.w*(en.hp/2)), 6);
+    }
+  }
+
+  function drawCoin(cn) {
+    ctx.beginPath();
+    ctx.fillStyle = "#fbbf24";
+    ctx.arc(cn.x, cn.y, cn.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.5)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function drawBullet(b) {
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(255,255,255,.95)";
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawParticles(dt) {
+    for (let i = state.particles.length - 1; i >= 0; i--) {
+      const p = state.particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { state.particles.splice(i,1); continue; }
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.92;
+      p.vy *= 0.92;
+
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 0.5));
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, 3, 3);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // =========================
+  // Update
+  // =========================
+  function updateHUD() {
+    hudScore.textContent = "Score: " + state.score;
+    hudLives.textContent = "Vidas: " + state.lives;
+    hudCombo.textContent = "Combo: x" + state.combo;
+    hudLevel.textContent = "Nível: " + state.level;
+  }
+
+  function bumpScore(points, comboable=true) {
+    state.score += points * (comboable ? state.combo : 1);
+    if (comboable) {
+      state.comboTimer = 1.4;
+      state.combo = Math.min(12, state.combo + 1);
+    }
+    // level sobe com score
+    state.level = 1 + Math.floor(state.score / 850);
+    checkTrophies();
+    updateHUD();
+  }
+
+  function takeHit() {
+    state.lives -= 1;
+    state.combo = 1;
+    state.comboTimer = 0;
+    tone(140, 0.12, "sawtooth", 0.06);
+    showToast("Dano! Vidas: " + state.lives, 1100);
+    updateHUD();
+
+    if (state.lives <= 0) {
+      tone(80, 0.18, "sine", 0.07);
+      endGame("Game Over", "Você foi atropelado pelo caos burocrático.");
+    }
+  }
+
+  function step(dt) {
+    // combo decay
+    if (state.comboTimer > 0) {
+      state.comboTimer -= dt;
+      if (state.comboTimer <= 0) {
+        state.comboTimer = 0;
+        state.combo = 1;
+      }
+    }
+
+    // spawn scaling
+    state.spawnEnemyT -= dt;
+    state.spawnCoinT -= dt;
+
+    const enemyInterval = Math.max(0.45, 1.15 - state.level * 0.05); // mais rápido com o tempo
+    const coinInterval  = 1.35;
+
+    if (state.spawnEnemyT <= 0) {
+      spawnEnemy();
+      // chance de spawns extras em levels mais altos
+      if (state.level >= 6 && Math.random() < 0.25) spawnEnemy();
+      state.spawnEnemyT = enemyInterval;
+    }
+    if (state.spawnCoinT <= 0) {
+      if (Math.random() < 0.85) spawnCoin();
+      state.spawnCoinT = coinInterval;
+    }
+
+    const p = playerRect();
+    const pRect = { x:p.x, y:p.y, w:p.w, h:p.h };
+
+    // bullets
+    for (let i = state.bullets.length - 1; i >= 0; i--) {
+      const b = state.bullets[i];
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      if (b.y < -40) state.bullets.splice(i,1);
+    }
+
+    // enemies
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
+      const e = state.enemies[i];
+      e.y += e.speed * dt;
+
+      const eRect = { x: e.x - e.w/2, y:e.y, w:e.w, h:e.h };
+
+      // colisão com player
+      if (rectsOverlap(pRect, eRect)) {
+        explode(e.x, e.y + 40, e.color);
+        state.enemies.splice(i,1);
+        takeHit();
+        continue;
+      }
+
+      // saiu da tela
+      if (e.y > innerHeight + 140) {
+        state.enemies.splice(i,1);
+        // punir levemente por “deixar passar”
+        state.combo = 1;
+        state.comboTimer = 0;
+      }
+    }
+
+    // coins
+    for (let i = state.coins.length - 1; i >= 0; i--) {
+      const c = state.coins[i];
+      c.y += c.speed * dt;
+
+      // coleta simples (distância)
+      const dx = c.x - p.cx;
+      const dy = c.y - (p.y + 40);
+      if ((dx*dx + dy*dy) < 42*42) {
+        state.coins.splice(i,1);
+        state.stats.coins++;
+        tone(520, 0.05, "triangle", 0.055);
+        bumpScore(50, true);
+        showToast("Moeda +50", 850);
+        continue;
+      }
+
+      if (c.y > innerHeight + 60) state.coins.splice(i,1);
+    }
+
+    // bullet collisions
+    for (let bi = state.bullets.length - 1; bi >= 0; bi--) {
+      const b = state.bullets[bi];
+      const bRect = { x: b.x - b.r, y: b.y - b.r, w: b.r*2, h: b.r*2 };
+
+      let hit = false;
+
+      for (let ei = state.enemies.length - 1; ei >= 0; ei--) {
+        const e = state.enemies[ei];
+        const eRect = { x: e.x - e.w/2, y:e.y, w:e.w, h:e.h };
+
+        if (rectsOverlap(bRect, eRect)) {
+          hit = true;
+          e.hp -= 1;
+          explode(b.x, b.y, "rgba(255,255,255,.9)");
+          tone(760, 0.03, "square", 0.04);
+
+          if (e.hp <= 0) {
+            explode(e.x, e.y + 30, e.color);
+            state.enemies.splice(ei,1);
+            state.stats.kills++;
+            bumpScore(120, true);
+            // chance de drop de coin
+            if (Math.random() < 0.25) {
+              state.coins.push({ lane: e.lane, x: e.x, y: e.y, r: 10, speed: 260 });
+            }
+          } else {
+            bumpScore(20, true);
+          }
+
+          if (b.pierce > 0) {
+            b.pierce -= 1;
+            hit = false; // não remove a bala ainda
+          }
+          break;
+        }
+      }
+
+      if (hit) state.bullets.splice(bi, 1);
+    }
+
+    // vitória opcional
+    if (state.score >= 20000) {
+      endGame("Vitória", "Parabéns! Você dominou o caos. (20000+)");
+    }
+
+    updateHUD();
+  }
+
+  // =========================
+  // Main loop
+  // =========================
+  function loop(ts) {
+    if (state.mode !== "game") return;
+    const dt = Math.min(0.033, (ts - state.lastTs) / 1000);
+    state.lastTs = ts;
+
+    if (!state.paused) step(dt);
+
+    // draw
+    drawBackground();
+    drawPlayer();
+    for (const e of state.enemies) drawEnemy(e);
+    for (const c of state.coins) drawCoin(c);
+    for (const b of state.bullets) drawBullet(b);
+    drawParticles(dt);
+
+    // pause overlay
+    if (state.paused) {
+      ctx.fillStyle = "rgba(0,0,0,.35)";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.font = "700 18px ui-monospace, Menlo, Monaco, Consolas, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("PAUSADO — aperte P/Esc para voltar", innerWidth/2, innerHeight/2);
+      ctx.textAlign = "left";
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  // =========================
+  // Screen transitions
+  // =========================
+  function goToStart() {
+    initAudio();
+    setMode("start");
+    showToast("Pronto. Agora no PC também.", 1200);
+  }
+
+  function goToOpening() {
+    setMode("opening");
+  }
+
+  // Opening: click/touch/enter
+  function openingContinue() { goToStart(); }
+  openContinue.addEventListener("click", openingContinue);
+  openingScreen.addEventListener("pointerdown", openingContinue);
+
+  // Start buttons
+  startButton.addEventListener("click", startGame);
+
+  // Pause/Restart
+  btnPause.addEventListener("click", () => setPaused(!state.paused));
+  btnRestart.addEventListener("click", () => resetGame());
+
+  // End screen
+  endPlayAgain.addEventListener("click", startGame);
+  endBack.addEventListener("click", () => { hideModal(shopModal); hideModal(mapModal); hideModal(trophyModal); goToStart(); });
+
+  // Modals
+  function openShop() { buildShop(); showModal(shopModal); }
+  function openMaps() { buildMaps(); showModal(mapModal); }
+  function openTrophies() { renderTrophyModal(); showModal(trophyModal); }
+
+  btnShopOpen.addEventListener("click", openShop);
+  btnMapOpen.addEventListener("click", openMaps);
+  btnTrophyOpen.addEventListener("click", openTrophies);
+
+  btnShopOpen2.addEventListener("click", openShop);
+  btnMapOpen2.addEventListener("click", openMaps);
+  btnTrophyOpen2.addEventListener("click", openTrophies);
+
+  shopClose.addEventListener("click", () => hideModal(shopModal));
+  mapClose.addEventListener("click", () => hideModal(mapModal));
+  trophyClose.addEventListener("click", () => hideModal(trophyModal));
+
+  // click outside card closes modal
+  [shopModal, mapModal, trophyModal].forEach(modal => {
+    modal.addEventListener("pointerdown", (e) => {
+      if (e.target === modal) hideModal(modal);
+    });
+  });
+
+  // Start at opening
+  setMode("opening");
+
+})();
+</script>
+</body>
+</html>
