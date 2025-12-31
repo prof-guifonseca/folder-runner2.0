@@ -1,0 +1,158 @@
+:root{
+  --bg:#0b0f1a;
+  --panel:#111827;
+  --panel2:#0f172a;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --accent:#22c55e;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --line:rgba(255,255,255,.12);
+  --shadow: 0 18px 50px rgba(0,0,0,.35);
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background: radial-gradient(1200px 600px at 50% 0%, rgba(34,197,94,.12), transparent 55%),
+              radial-gradient(1000px 600px at 90% 20%, rgba(59,130,246,.10), transparent 55%),
+              linear-gradient(180deg,#070a12,#0b1020);
+  color:var(--text);
+  font-family: ui-monospace, Menlo, Monaco, Consolas, "Press Start 2P", monospace;
+  overflow:hidden;
+}
+
+/* Screens */
+.screen{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  padding:24px;
+}
+.hidden{display:none !important}
+.card{
+  width:min(920px, 92vw);
+  background: linear-gradient(180deg, rgba(17,24,39,.88), rgba(15,23,42,.85));
+  border:1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding:24px;
+}
+h1{margin:0 0 10px 0; font-size:28px; letter-spacing:1px}
+p{margin:6px 0; color:var(--muted); line-height:1.45}
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+.btn{
+  appearance:none; border:1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color:var(--text);
+  padding:10px 14px;
+  border-radius: 12px;
+  cursor:pointer;
+  transition: transform .08s ease, background .2s ease;
+  font-weight:700;
+}
+.btn:hover{background: rgba(255,255,255,.10)}
+.btn:active{transform: translateY(1px)}
+.btn.primary{background: rgba(34,197,94,.18); border-color: rgba(34,197,94,.35)}
+.btn.danger{background: rgba(239,68,68,.14); border-color: rgba(239,68,68,.35)}
+.kbd{
+  display:inline-block;
+  padding:2px 8px;
+  border:1px solid var(--line);
+  border-bottom-width:2px;
+  border-radius:10px;
+  background: rgba(255,255,255,.06);
+  color:var(--text);
+  font-weight:800;
+  margin:0 2px;
+}
+
+/* Game layer */
+#gameRoot{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+}
+#hud{
+  position:absolute; left:12px; right:12px; top:12px;
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  z-index:20;
+  pointer-events:none;
+}
+.hud-pill{
+  pointer-events:auto;
+  display:flex; align-items:center; gap:10px;
+  background: rgba(17,24,39,.75);
+  border:1px solid var(--line);
+  border-radius: 999px;
+  padding:8px 12px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.22);
+  backdrop-filter: blur(8px);
+}
+.hud-pill strong{font-size:14px}
+.hud-pill span{color:var(--muted); font-size:12px}
+#toast{
+  position:absolute; left:50%; top:68px;
+  transform: translateX(-50%);
+  background: rgba(15,23,42,.85);
+  border:1px solid var(--line);
+  border-radius: 999px;
+  padding:10px 14px;
+  color:var(--text);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
+  opacity:0; pointer-events:none;
+  transition: opacity .22s ease, transform .22s ease;
+  z-index:30;
+  max-width:min(92vw, 720px);
+  text-align:center;
+  font-size:12px;
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+#overlayHint{
+  position:absolute; left:50%; bottom:16px;
+  transform: translateX(-50%);
+  z-index:15;
+  background: rgba(17,24,39,.55);
+  border:1px solid var(--line);
+  border-radius: 999px;
+  padding:8px 12px;
+  color:var(--muted);
+  font-size:11px;
+  pointer-events:none;
+  backdrop-filter: blur(8px);
+}
+
+canvas{display:block; width:100vw; height:100vh}
+/* Modals */
+.modal{
+  position:fixed; inset:0;
+  display:flex; justify-content:center; align-items:center;
+  background: rgba(0,0,0,.55);
+  z-index:50;
+}
+.modal > .card{max-height:min(86vh, 760px); overflow:auto}
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap:12px;
+  margin-top:10px;
+}
+.opt{
+  border:1px solid var(--line);
+  border-radius: 14px;
+  padding:12px;
+  background: rgba(255,255,255,.05);
+  cursor:pointer;
+}
+.opt:hover{background: rgba(255,255,255,.08)}
+.opt small{color:var(--muted)}
+.swatch{width:100%; height:54px; border-radius:12px; margin-top:10px; border:1px solid var(--line)}
+.tag{
+  display:inline-flex; align-items:center;
+  font-size:11px; padding:4px 8px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.05);
+  color:var(--muted);
+  margin-right:6px;
+}
